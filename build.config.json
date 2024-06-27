@@ -1,0 +1,39 @@
+{
+  "appId": "com.energypatrikhu.tile-joiner",
+  "productName": "Tile Joiner",
+  "compression": "maximum",
+  "publish": {
+    "provider": "github",
+    "owner": "EnergyPatrikHU",
+    "repo": "tile-joiner",
+    "releaseType": "release",
+    "publishAutoUpdate": true
+  },
+  "directories": {
+    "output": "dist"
+  },
+  "win": {
+    "target": "nsis"
+  },
+  "nsis": {
+    "createDesktopShortcut": true,
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "perMachine": true,
+    "menuCategory": "EnergyPatrikHU"
+  },
+  "files": [
+    "resources/app/**/*.mjs",
+    {
+      "from": "build",
+      "to": ""
+    }
+  ],
+  "extraResources": [
+    {
+      "from": "./resources/extraResources/",
+      "to": "",
+      "filter": ["**/*"]
+    }
+  ]
+}
