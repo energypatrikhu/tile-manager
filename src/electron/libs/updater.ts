@@ -3,7 +3,7 @@ import electronUpdater from 'electron-updater';
 const { autoUpdater } = electronUpdater;
 
 export class Updater {
-  private enabled = false;
+  private enabled = true;
 
   private appVersion: string;
 
