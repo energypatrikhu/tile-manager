@@ -1,9 +1,14 @@
 {
-	"git": {
-		"tagAnnotation": "Release ${version}"
-	},
-	"github": {
-		"release": false,
-		"tokenRef": "GH_TOKEN"
-	}
+  "git": {
+    "tagAnnotation": "Release ${version}"
+  },
+  "github": {
+    "release": true,
+    "tokenRef": "GH_TOKEN",
+    "comments": {
+      "submit": true,
+      "issue": "_This issue has been resolved in v${version}. See [${releaseName}](${releaseUrl}) for release notes._",
+      "pr": "_This pull request is included in v${version}. See [${releaseName}](${releaseUrl}) for release notes._"
+    }
+  }
 }
