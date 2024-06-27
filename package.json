@@ -1,6 +1,6 @@
 {
   "name": "tile-joiner",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "private": true,
   "description": "Tile Joiner",
   "main": "resources/app/electron.mjs",
