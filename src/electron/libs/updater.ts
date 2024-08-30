@@ -1,16 +1,23 @@
 import { app } from 'electron';
 import electronUpdater from 'electron-updater';
+import { sleep } from './utils.js';
 const { autoUpdater } = electronUpdater;
 
 export class Updater {
   private enabled = true;
 
+  private mainWindow: Electron.BrowserWindow;
   private appVersion: string;
 
-  constructor(appVersion: string) {
+  constructor(mainWindow: Electron.BrowserWindow, appVersion: string) {
+    this.mainWindow = mainWindow;
     this.appVersion = appVersion;
 
-    autoUpdater.on('update-downloaded', async function () {
+    autoUpdater.on('update-downloaded', async () => {
+      this.mainWindow.webContents.send('update', { message: 'Update downloaded, restarting in 3 seconds...' });
+
+      await sleep(3000);
+
       autoUpdater.quitAndInstall(true, true);
       app.exit();
     });

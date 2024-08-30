@@ -5,8 +5,10 @@
   import { onMount } from 'svelte';
   import app from '$stores/app';
   import { page } from '$app/stores';
+  import { fade } from 'svelte/transition';
 
   let ready = false;
+  let loadingMessage = 'Loading...';
 
   let pages = [
     { name: 'Tile Joiner', path: '/' },
@@ -30,7 +32,17 @@
     ready = true;
   });
 
-  onMount(() => window.electron.send('ready', {}));
+  window.electron.receive('update', (data) => {
+    loadingMessage = data.message;
+  });
+
+  onMount(() => {
+    setTimeout(() => {
+      if (!ready) {
+        window.electron.send('ready', {});
+      }
+    }, 1000);
+  });
 </script>
 
 {#if ready}
@@ -57,7 +69,8 @@
     <slot />
   </main>
 {:else}
-  <div class="absolute flex justify-center items-center h-full w-full">
+  <div class="absolute flex flex-col gap-4 text-xl justify-center items-center h-full w-full bg-neutral-800">
     <Loading />
+    <span>{loadingMessage}</span>
   </div>
 {/if}

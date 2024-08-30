@@ -18,7 +18,9 @@ export async function mainLoader(mainWindow: BrowserWindow, isDev: boolean) {
     return;
   }
 
-  if (await new Updater(versions.appVersion).check()) {
+  mainWindow.webContents.send('update', { message: 'Checking for update...' });
+  if (await new Updater(mainWindow, versions.appVersion).check()) {
+    mainWindow.webContents.send('update', { message: 'Update available, downloading update...' });
     return;
   }
 

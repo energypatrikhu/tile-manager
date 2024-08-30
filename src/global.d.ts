@@ -51,6 +51,16 @@ type WindowElectronReceiveEvent = <K extends keyof ElectronEventData>(
 // Events
 //
 interface ElectronEventData {
+  update: {
+    send: {};
+    receive: {
+      event: 'update';
+      data: {
+        message: string;
+      };
+    };
+  };
+
   ready: {
     send: {
       event: 'ready';
