@@ -119,6 +119,7 @@ interface ElectronEventData {
     send: {
       event: 'joinTiles';
       data: {
+        tileGap: number;
         inputPath: string;
         inputExtension: string;
         outputPath: string;
@@ -143,6 +144,39 @@ interface ElectronEventData {
     send: {};
     receive: {
       event: 'joinTilesFeedback';
+      data: {
+        message: string;
+      };
+    };
+  };
+
+  multiplyTile: {
+    send: {
+      event: 'multiplyTile';
+      data: {
+        tileGap: number;
+        inputPath: string;
+        inputExtension: string;
+        outputPath: string;
+        outputExtension: string;
+        xQuantity: number;
+        yQuantity: number;
+        tileWidth: number;
+        tileHeight: number;
+        fullImageWidth: number;
+        fullImageHeight: number;
+      };
+    };
+    receive: {
+      event: 'multiplyTile';
+      data: string;
+    };
+  };
+
+  multiplyTileFeedback: {
+    send: {};
+    receive: {
+      event: 'multiplyTileFeedback';
       data: {
         message: string;
       };

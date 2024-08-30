@@ -3,6 +3,7 @@ import { mainLoader } from './main-loader.js';
 import Sharp from 'sharp';
 import { existsSync } from 'fs';
 import tileJoiner from './tile-joiner.js';
+import tileMultiplier from './tile-multiplier.js';
 
 export class EventRouter {
   constructor(ipcMain: Electron.IpcMain, mainWindow: Electron.BrowserWindow, isDev: boolean) {
@@ -37,5 +38,7 @@ export class EventRouter {
     });
 
     ipcMain.on('joinTiles', async (_, data) => tileJoiner(mainWindow, data));
+
+    ipcMain.on('multiplyTile', async (_, data) => tileMultiplier(mainWindow, data));
   }
 }
