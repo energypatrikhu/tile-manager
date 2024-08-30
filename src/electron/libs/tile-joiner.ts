@@ -1,4 +1,4 @@
-import { execSync, spawnSync } from 'child_process';
+import { spawnSync } from 'child_process';
 import { dialog } from 'electron';
 import { existsSync } from 'fs';
 import { basename, join } from 'path';
@@ -7,6 +7,7 @@ import Sharp from 'sharp';
 function getImagesByIndex(
   mainWindow: Electron.BrowserWindow,
   options: {
+    tileGap: number;
     tileBasePath: string;
     extension: string;
     yQuantity: number;
@@ -33,8 +34,20 @@ function getImagesByIndex(
         continue;
       }
 
-      const top = y * options.tileHeight;
-      const left = x * options.tileWidth;
+      let top = 0;
+      let left = 0;
+
+      if (y > 0) {
+        top = y * options.tileHeight + y * options.tileGap;
+      } else {
+        top = y * options.tileHeight;
+      }
+
+      if (x > 0) {
+        left = x * options.tileWidth + x * options.tileGap;
+      } else {
+        left = x * options.tileWidth;
+      }
 
       images.push({
         input: path,
@@ -55,6 +68,7 @@ function getImagesByIndex(
 function getImagesByTilePosition(
   mainWindow: Electron.BrowserWindow,
   options: {
+    tileGap: number;
     tileBasePath: string;
     extension: string;
     yQuantity: number;
@@ -82,8 +96,20 @@ function getImagesByTilePosition(
         continue;
       }
 
-      const top = y * options.tileHeight;
-      const left = x * options.tileWidth;
+      let top = 0;
+      let left = 0;
+
+      if (y > 0) {
+        top = y * options.tileHeight + y * options.tileGap;
+      } else {
+        top = y * options.tileHeight;
+      }
+
+      if (x > 0) {
+        left = x * options.tileWidth + x * options.tileGap;
+      } else {
+        left = x * options.tileWidth;
+      }
 
       images.push({
         input: path,
@@ -104,6 +130,7 @@ function getImagesByTilePosition(
 export default async function tileJoiner(
   mainWindow: Electron.BrowserWindow,
   options: {
+    tileGap: number;
     inputPath: string;
     inputExtension: string;
     outputPath: string;
@@ -124,7 +151,9 @@ export default async function tileJoiner(
         type: 'question',
         title: 'Joining tiles',
         message: `Joining ${
-          options.xQuantity * options.yQuantity
+          options.xQuantity * options.yQuantity +
+          (options.tileGap * options.xQuantity - 1) +
+          (options.tileGap * options.yQuantity - 1)
         } tile(s), this may take a while. Do you want to continue?\n\nOutput path: ${options.outputPath}`,
         buttons: ['Cancel', 'Yes'],
       })
@@ -154,6 +183,7 @@ export default async function tileJoiner(
   switch (options.positionFormat) {
     case 'id':
       images = getImagesByIndex(mainWindow, {
+        tileGap: options.tileGap,
         tileBasePath,
         extension: options.inputExtension,
         yQuantity: options.yQuantity,
@@ -167,6 +197,7 @@ export default async function tileJoiner(
     case 'x-y':
     case 'y-x':
       images = getImagesByTilePosition(mainWindow, {
+        tileGap: options.tileGap,
         tileBasePath,
         extension: options.inputExtension,
         yQuantity: options.yQuantity,
@@ -187,8 +218,8 @@ export default async function tileJoiner(
 
   Sharp({
     create: {
-      width: options.fullImageWidth,
-      height: options.fullImageHeight,
+      width: options.fullImageWidth + options.tileGap * (options.xQuantity - 1),
+      height: options.fullImageHeight + options.tileGap * (options.yQuantity - 1),
       channels: 4,
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     },

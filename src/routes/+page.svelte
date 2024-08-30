@@ -25,6 +25,7 @@
     'webp',
   ];
 
+  let tileGap = 0;
   let fullImageSizeCalculation: 'tile' | 'manual' = 'manual';
   let tileSizes = { width: 0, height: 0 };
   let fullImageSizes = { width: 0, height: 0 };
@@ -85,10 +86,11 @@
     joiningTiles = true;
 
     window.electron.send('joinTiles', {
+      tileGap,
       inputPath: tilePath,
       inputExtension: tilePath.split('.').pop()!,
-      outputPath: outputPath,
-      outputExtension: outputExtension,
+      outputPath,
+      outputExtension,
       xQuantity: fullImageSizesByTiles.xQuantity,
       yQuantity: fullImageSizesByTiles.yQuantity,
       tileWidth: tileSizes.width,
@@ -196,6 +198,21 @@
             /> px
           </label>
         {/if}
+      </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col">
+    <span class="text-3xl border-b p-2">Tile gap</span>
+    <div class="p-2 flex flex-col gap-2">
+      <div class="flex flex-col w-fit gap-2">
+        <label>
+          <input
+            type="number"
+            class="text-black px-4 py-1 rounded-md"
+            bind:value="{tileGap}"
+          /> px
+        </label>
       </div>
     </div>
   </div>
