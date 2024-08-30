@@ -4,8 +4,14 @@
 
   import { onMount } from 'svelte';
   import app from '$stores/app';
+  import { page } from '$app/stores';
 
   let ready = false;
+
+  let pages = [
+    { name: 'Tile Joiner', path: '/' },
+    { name: 'Tile Multiplier', path: '/multiplier' },
+  ];
 
   window.addEventListener('mouseup', (mouseEvent) => {
     if (![2].includes(mouseEvent.button)) {
@@ -29,7 +35,19 @@
 
 {#if ready}
   <header class="fixed w-full h-12 flex justify-between items-center px-4 bg-neutral-700">
-    <div class="h-full flex items-center justify-center text-3xl">Tile Joiner</div>
+    <div class="h-full flex items-center gap-4 text-xl">
+      {#each pages as pageData}
+        <a
+          class="h-full flex items-center px-4 box-content border-b-2 border-b-transparent hover:bg-white/10 {$page.url
+            .pathname === pageData.path
+            ? 'border-b-white'
+            : ''}"
+          href="{pageData.path}"
+        >
+          <span>{pageData.name}</span>
+        </a>
+      {/each}
+    </div>
     <div>
       <div><span class="font-light">App Version:</span> {$app.appVersion}</div>
       <div><span class="font-light">Electron Version:</span> {$app.electronVersion}</div>
