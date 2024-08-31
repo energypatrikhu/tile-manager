@@ -95,6 +95,9 @@ export default async function tileMultiplier(
         })
       ).response !== 0
     ) {
+      mainWindow.webContents.send('multiplyTileFeedback', {
+        message: 'Cancelled process',
+      });
       return;
     }
   }

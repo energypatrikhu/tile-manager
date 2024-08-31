@@ -5,7 +5,6 @@
   import { onMount } from 'svelte';
   import app from '$stores/app';
   import { page } from '$app/stores';
-  import { fade } from 'svelte/transition';
 
   let ready = false;
   let loadingMessage = 'Loading...';
@@ -13,6 +12,7 @@
   let pages = [
     { name: 'Tile Joiner', path: '/' },
     { name: 'Tile Multiplier', path: '/multiplier' },
+    { name: 'Tile Maker', path: '/maker' },
   ];
 
   window.addEventListener('mouseup', (mouseEvent) => {

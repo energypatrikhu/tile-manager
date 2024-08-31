@@ -1,58 +1,60 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import supportedExtensions from '../libs/supportedExtensions';
+  import supportedExtensions from '../../libs/supportedExtensions';
 
-  let tileGap = 0;
-  let fullImageSizeCalculation: 'tile' | 'manual' = 'tile';
+  let tileSizeCalculation: 'tile' | 'manual' = 'tile';
   let tileSizes = { width: 0, height: 0 };
+  let tilesQuantity = { xQuantity: 0, yQuantity: 0 };
   let fullImageSizes = { width: 0, height: 0 };
-  let fullImageSizesByTiles = { xQuantity: 0, yQuantity: 0 };
   let tileNaming: '{n}' | '{x}-{y}' | '{y}-{x}' | 'template' = '{n}';
   let tileNamingTemplate: string = tileNaming;
   let indexOffset = 0;
-  let tiles: FileList;
-  let tilePath = '';
+  let fullImage: FileList;
+  let fullImagePath = '';
   let outputPath = '';
   let outputExtension = 'webp';
   let consoleLogs: string[] = [];
   let isRunning = false;
   let consoleDiv: HTMLDivElement | null = null;
 
-  $: if (fullImageSizeCalculation === 'tile') {
-    fullImageSizes = {
-      width: tileSizes.width * fullImageSizesByTiles.xQuantity || 0,
-      height: tileSizes.height * fullImageSizesByTiles.yQuantity || 0,
-    };
-  } else {
-    fullImageSizesByTiles = {
-      xQuantity: Math.ceil(fullImageSizes.width / tileSizes.width) || 0,
-      yQuantity: Math.ceil(fullImageSizes.height / tileSizes.height) || 0,
+  $: if (tileSizeCalculation === 'tile') {
+    tileSizes = {
+      width: fullImageSizes.width / tilesQuantity.xQuantity || 0,
+      height: fullImageSizes.height / tilesQuantity.yQuantity || 0,
     };
   }
 
-  $: if (tiles && tiles.length > 0) {
-    let images = Array.from(tiles).filter((file) => file.type.startsWith('image/'));
+  $: if (fullImage && fullImage.length > 0) {
+    let images = Array.from(fullImage).filter((file) => file.type.startsWith('image/'));
 
     if (images.length > 0) {
       console.log({ images });
-      tilePath = images[0].path;
+      fullImagePath = images[0].path;
       window.electron.send('getSizes', images[0].path);
     }
   }
 
   function startTileJoin() {
     if (
-      !tilePath ||
+      !fullImagePath ||
       !outputPath ||
       !outputExtension ||
-      fullImageSizesByTiles.xQuantity === 0 ||
-      fullImageSizesByTiles.yQuantity === 0 ||
+      tilesQuantity.xQuantity === 0 ||
+      tilesQuantity.yQuantity === 0 ||
       tileSizes.width === 0 ||
       tileSizes.height === 0 ||
       fullImageSizes.width === 0 ||
       fullImageSizes.height === 0 ||
       (tileNaming === 'template' && !tileNamingTemplate)
     ) {
+      if (fullImageSizes.width % tileSizes.width !== 0 || fullImageSizes.height % tileSizes.height !== 0) {
+        window.electron.send('showMessageBoxSync', {
+          title: 'Error',
+          message: 'Full image size must be divisible by tile size',
+          type: 'error',
+        });
+      }
+
       window.electron.send('showMessageBoxSync', {
         title: 'Error',
         message: 'Please fill all fields',
@@ -64,14 +66,13 @@
     consoleLogs = [];
     isRunning = true;
 
-    window.electron.send('joinTiles', {
-      tileGap,
-      inputPath: tilePath,
-      inputExtension: tilePath.split('.').pop()!,
+    window.electron.send('extractTiles', {
+      inputPath: fullImagePath,
+      inputExtension: fullImagePath.split('.').pop()!,
       outputPath,
       outputExtension,
-      xQuantity: fullImageSizesByTiles.xQuantity,
-      yQuantity: fullImageSizesByTiles.yQuantity,
+      xQuantity: tilesQuantity.xQuantity,
+      yQuantity: tilesQuantity.yQuantity,
       tileWidth: tileSizes.width,
       tileHeight: tileSizes.height,
       fullImageWidth: fullImageSizes.width,
@@ -83,18 +84,17 @@
   }
 
   onMount(() => {
-    window.electron.receive('getSizes', (data) => (tileSizes = data.sizes));
+    window.electron.receive('getSizes', (data) => (fullImageSizes = data.sizes));
 
-    window.electron.receive('showSaveDialogSync', (path) => {
-      if (!path) return;
+    window.electron.receive('showOpenDialogSync', (path) => {
+      if (!path || path.length < 0) return;
 
-      const extension = path.split('.').pop();
-      outputExtension = extension ? (supportedExtensions.includes(extension) ? extension : outputExtension) : outputExtension;
-      outputPath = path.slice(0, path.lastIndexOf('.')) + '.' + outputExtension;
+      const [selectedPath] = path;
+      outputPath = selectedPath;
     });
 
-    window.electron.receive('joinTilesFeedback', (data) => {
-      if (data.message === 'Tiles joined successfully' || data.message === 'Cancelled process') {
+    window.electron.receive('extractTilesFeedback', (data) => {
+      if (data.message === 'Tiles extracted successfully' || data.message === 'Cancelled process') {
         isRunning = false;
       }
 
@@ -111,29 +111,28 @@
 
 <div class="flex flex-col gap-4 px-2">
   <div class="flex flex-col">
-    <span class="text-3xl border-b p-2">Tiles</span>
+    <span class="text-3xl border-b p-2">Full image</span>
     <div class="p-2 flex flex-col gap-2">
       <input
         type="file"
-        multiple
         accept="image/*"
-        bind:files="{tiles}"
+        bind:files="{fullImage}"
       />
       <div class="flex flex-col pl-2">
-        <span>Tile Width: {tileSizes.width}px</span>
-        <span>Tile Height: {tileSizes.height}px</span>
+        <span>Image Width: {fullImageSizes.width}px</span>
+        <span>Image Height: {fullImageSizes.height}px</span>
       </div>
     </div>
   </div>
 
   <div class="flex flex-col">
-    <span class="text-3xl border-b p-2">Full image size calculation</span>
+    <span class="text-3xl border-b p-2">Tile image size calculation</span>
     <div class="p-2 flex flex-col gap-2">
       <div>
         By:
         <select
           class="w-fit text-black px-4 py-1 rounded-md"
-          bind:value="{fullImageSizeCalculation}"
+          bind:value="{tileSizeCalculation}"
         >
           <option value="tile">Tile x & y quantity</option>
           <option value="manual">Manual value</option>
@@ -141,32 +140,32 @@
       </div>
 
       <div class="flex flex-col w-fit gap-2">
-        {#if fullImageSizeCalculation === 'tile'}
+        {#if tileSizeCalculation === 'tile'}
           <label>
             <span class="text-xl">x</span> quantity:
             <input
               type="number"
               class="text-black px-4 py-1 rounded-md"
-              bind:value="{fullImageSizesByTiles.xQuantity}"
+              bind:value="{tilesQuantity.xQuantity}"
             />
-            ( {fullImageSizes.width} px )
+            ( {tileSizes.width} px )
           </label>
           <label>
             <span class="text-xl">y</span> quantity:
             <input
               type="number"
               class="text-black px-4 py-1 rounded-md"
-              bind:value="{fullImageSizesByTiles.yQuantity}"
+              bind:value="{tilesQuantity.yQuantity}"
             />
-            ( {fullImageSizes.height} px )
+            ( {tileSizes.height} px )
           </label>
-        {:else if fullImageSizeCalculation === 'manual'}
+        {:else if tileSizeCalculation === 'manual'}
           <label>
             Width:
             <input
               type="number"
               class="text-black px-4 py-1 rounded-md"
-              bind:value="{fullImageSizes.width}"
+              bind:value="{tileSizes.width}"
             /> px
           </label>
           <label>
@@ -174,25 +173,10 @@
             <input
               type="number"
               class="text-black px-4 py-1 rounded-md"
-              bind:value="{fullImageSizes.height}"
+              bind:value="{tileSizes.height}"
             /> px
           </label>
         {/if}
-      </div>
-    </div>
-  </div>
-
-  <div class="flex flex-col">
-    <span class="text-3xl border-b p-2">Tile gap</span>
-    <div class="p-2 flex flex-col gap-2">
-      <div class="flex flex-col w-fit gap-2">
-        <label>
-          <input
-            type="number"
-            class="text-black px-4 py-1 rounded-md"
-            bind:value="{tileGap}"
-          /> px
-        </label>
       </div>
     </div>
   </div>
@@ -255,15 +239,24 @@
           class="bg-white text-black hover:bg-slate-400 disabled:bg-slate-600 disabled:cursor-not-allowed px-4 py-1 rounded-md"
           disabled="{isRunning}"
           on:click="{() => {
-            window.electron.send('showSaveDialogSync', {
-              title: 'Save As',
-              defaultPath: 'output.webp',
-              filters: [{ name: 'Images', extensions: supportedExtensions }],
+            window.electron.send('showOpenDialogSync', {
+              title: 'Save to',
+              properties: ['openDirectory'],
             });
-          }}">Select output</button
+          }}">Select output path</button
         >
-        <span class="font-light"> Selected: </span>
-        <span>{outputPath || 'N/A'}</span>
+        <select
+          class="w-fit text-black px-4 py-1 rounded-md"
+          bind:value="{outputExtension}"
+        >
+          {#each supportedExtensions as extension}
+            <option value="{extension}">{extension}</option>
+          {/each}
+        </select>
+        <div class="flex flex-col">
+          <span class="font-light">Selected path: <span class="font-normal">{outputPath || 'N/A'}</span></span>
+          <span class="font-light">Selected extension: <span class="font-normal">{outputExtension || 'N/A'}</span></span>
+        </div>
       </div>
     </div>
   </div>

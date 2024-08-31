@@ -4,6 +4,7 @@ import Sharp from 'sharp';
 import { existsSync } from 'fs';
 import tileJoiner from './tile-joiner.js';
 import tileMultiplier from './tile-multiplier.js';
+import tileExtractor from './tile-extractor.js';
 
 export class EventRouter {
   constructor(ipcMain: Electron.IpcMain, mainWindow: Electron.BrowserWindow, isDev: boolean) {
@@ -21,7 +22,7 @@ export class EventRouter {
       mainWindow.webContents.send('showMessageBoxSync', dialog.showMessageBoxSync(mainWindow, data));
     });
 
-    ipcMain.on('getTileSizes', async (_, data) => {
+    ipcMain.on('getSizes', async (_, data) => {
       if (!existsSync(data)) {
         console.log('File does not exist');
         return;
@@ -29,8 +30,8 @@ export class EventRouter {
 
       const { width, height } = await Sharp(data).metadata();
 
-      mainWindow.webContents.send('getTileSizes', {
-        tileSizes: {
+      mainWindow.webContents.send('getSizes', {
+        sizes: {
           width: width || 0,
           height: height || 0,
         },
@@ -38,7 +39,7 @@ export class EventRouter {
     });
 
     ipcMain.on('joinTiles', async (_, data) => tileJoiner(mainWindow, data));
-
     ipcMain.on('multiplyTile', async (_, data) => tileMultiplier(mainWindow, data));
+    ipcMain.on('extractTiles', async (_, data) => tileExtractor(mainWindow, data));
   }
 }

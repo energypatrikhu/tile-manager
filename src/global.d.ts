@@ -109,15 +109,15 @@ interface ElectronEventData {
     };
   };
 
-  getTileSizes: {
+  getSizes: {
     send: {
-      event: 'getTileSizes';
+      event: 'getSizes';
       data: string;
     };
     receive: {
-      event: 'getTileSizes';
+      event: 'getSizes';
       data: {
-        tileSizes: {
+        sizes: {
           width: number;
           height: number;
         };
@@ -141,7 +141,8 @@ interface ElectronEventData {
         fullImageWidth: number;
         fullImageHeight: number;
         offset: number;
-        positionFormat: 'id' | 'x-y' | 'y-x';
+        positionFormat: '{n}' | '{x}-{y}' | '{y}-{x}' | 'template';
+        positionTemplate: string;
       };
     };
     receive: {
@@ -187,6 +188,41 @@ interface ElectronEventData {
     send: {};
     receive: {
       event: 'multiplyTileFeedback';
+      data: {
+        message: string;
+      };
+    };
+  };
+
+  extractTiles: {
+    send: {
+      event: 'extractTiles';
+      data: {
+        inputPath: string;
+        inputExtension: string;
+        outputPath: string;
+        outputExtension: string;
+        xQuantity: number;
+        yQuantity: number;
+        tileWidth: number;
+        tileHeight: number;
+        fullImageWidth: number;
+        fullImageHeight: number;
+        offset: number;
+        positionFormat: '{n}' | '{x}-{y}' | '{y}-{x}' | 'template';
+        positionTemplate: string;
+      };
+    };
+    receive: {
+      event: 'extractTiles';
+      data: string;
+    };
+  };
+
+  extractTilesFeedback: {
+    send: {};
+    receive: {
+      event: 'extractTilesFeedback';
       data: {
         message: string;
       };

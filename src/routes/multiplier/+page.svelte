@@ -1,29 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-
-  const supportedExtensions = [
-    'avif',
-    'dz',
-    'fits',
-    'gif',
-    'heif',
-    'input',
-    'jpeg',
-    'jpg',
-    'jp2',
-    'jxl',
-    'magick',
-    'openslide',
-    'pdf',
-    'png',
-    'ppm',
-    'raw',
-    'svg',
-    'tiff',
-    'tif',
-    'v',
-    'webp',
-  ];
+  import supportedExtensions from '../../libs/supportedExtensions';
 
   let tileGap = 0;
   let tileSizes = { width: 0, height: 0 };
@@ -34,7 +11,7 @@
   let outputPath = '';
   let outputExtension = 'webp';
   let consoleLogs: string[] = [];
-  let multiplyingTile = false;
+  let isRunning = false;
   let consoleDiv: HTMLDivElement | null = null;
 
   $: fullImageSizes = {
@@ -43,12 +20,12 @@
   };
 
   $: if (tile && tile.length > 0) {
-    let imageTiles = Array.from(tile).filter((file) => file.type.startsWith('image/'));
+    let images = Array.from(tile).filter((file) => file.type.startsWith('image/'));
 
-    if (imageTiles.length > 0) {
-      console.log({ imageTiles });
-      tilePath = imageTiles[0].path;
-      window.electron.send('getTileSizes', imageTiles[0].path);
+    if (images.length > 0) {
+      console.log({ imageTiles: images });
+      tilePath = images[0].path;
+      window.electron.send('getSizes', images[0].path);
     }
   }
 
@@ -73,7 +50,7 @@
     }
 
     consoleLogs = [];
-    multiplyingTile = true;
+    isRunning = true;
 
     window.electron.send('multiplyTile', {
       tileGap,
@@ -91,7 +68,7 @@
   }
 
   onMount(() => {
-    window.electron.receive('getTileSizes', (data) => (tileSizes = data.tileSizes));
+    window.electron.receive('getSizes', (data) => (tileSizes = data.sizes));
 
     window.electron.receive('showSaveDialogSync', (path) => {
       if (!path) return;
@@ -102,8 +79,8 @@
     });
 
     window.electron.receive('multiplyTileFeedback', (data) => {
-      if (data.message === 'Tile multiplied successfully') {
-        multiplyingTile = false;
+      if (data.message === 'Tile multiplied successfully' || data.message === 'Cancelled process') {
+        isRunning = false;
       }
 
       consoleLogs = [...consoleLogs, data.message];
@@ -180,7 +157,7 @@
       <div>
         <button
           class="bg-white text-black hover:bg-slate-400 disabled:bg-slate-600 disabled:cursor-not-allowed px-4 py-1 rounded-md"
-          disabled="{multiplyingTile}"
+          disabled="{isRunning}"
           on:click="{() => {
             window.electron.send('showSaveDialogSync', {
               title: 'Save As',
@@ -200,7 +177,7 @@
     <div>
       <button
         class="bg-white text-black hover:bg-slate-400 disabled:bg-slate-600 disabled:cursor-not-allowed px-16 py-2 text-2xl rounded-xl"
-        disabled="{multiplyingTile}"
+        disabled="{isRunning}"
         on:click="{startTileJoin}">Start</button
       >
     </div>

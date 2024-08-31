@@ -15,6 +15,8 @@ function getImagesByIndex(
     tileWidth: number;
     tileHeight: number;
     offset: number;
+    positionFormat: '{n}' | 'template';
+    positionTemplate?: string;
   },
 ) {
   const images = [];
@@ -24,7 +26,14 @@ function getImagesByIndex(
     for (let x = 0; x < options.xQuantity; x++) {
       ++i;
 
-      const path = join(options.tileBasePath, `${i}.${options.extension}`);
+      const path = join(
+        options.tileBasePath,
+        `${
+          options.positionFormat === 'template' && options.positionTemplate
+            ? options.positionTemplate.replace('{n}', i.toString())
+            : options.positionFormat.replace('{n}', i.toString())
+        }.${options.extension}`,
+      );
 
       if (!existsSync(path)) {
         console.log(`X | Tile '${path}' not found`);
@@ -76,7 +85,8 @@ function getImagesByTilePosition(
     tileWidth: number;
     tileHeight: number;
     offset: number;
-    positionFormat: 'x-y' | 'y-x';
+    positionFormat: '{x}-{y}' | '{y}-{x}' | 'template';
+    positionTemplate?: string;
   },
 ) {
   const images = [];
@@ -85,7 +95,11 @@ function getImagesByTilePosition(
     for (let x = options.offset; x < options.xQuantity + options.offset; x++) {
       const path = join(
         options.tileBasePath,
-        `${options.positionFormat.replace('x', x.toString()).replace('y', y.toString())}.${options.extension}`,
+        `${
+          options.positionFormat === 'template' && options.positionTemplate
+            ? options.positionTemplate.replace('{x}', x.toString()).replace('{y}', y.toString())
+            : options.positionFormat.replace('{x}', x.toString()).replace('{y}', y.toString())
+        }.${options.extension}`,
       );
 
       if (!existsSync(path)) {
@@ -142,7 +156,8 @@ export default async function tileJoiner(
     fullImageWidth: number;
     fullImageHeight: number;
     offset: number;
-    positionFormat: 'id' | 'x-y' | 'y-x';
+    positionFormat: '{n}' | '{x}-{y}' | '{y}-{x}' | 'template';
+    positionTemplate: string;
   },
 ) {
   if (
@@ -151,9 +166,7 @@ export default async function tileJoiner(
         type: 'question',
         title: 'Joining tiles',
         message: `Joining ${
-          options.xQuantity * options.yQuantity +
-          (options.tileGap * options.xQuantity - 1) +
-          (options.tileGap * options.yQuantity - 1)
+          options.xQuantity * options.yQuantity
         } tile(s), this may take a while. Do you want to continue?\n\nOutput path: ${options.outputPath}`,
         buttons: ['Cancel', 'Yes'],
       })
@@ -169,6 +182,9 @@ export default async function tileJoiner(
         })
       ).response !== 0
     ) {
+      mainWindow.webContents.send('joinTilesFeedback', {
+        message: 'Cancelled process',
+      });
       return;
     }
   }
@@ -179,9 +195,9 @@ export default async function tileJoiner(
 
   const tileBasePath = options.inputPath.slice(0, -basename(options.inputPath).length);
 
-  let images = [];
+  let images: Sharp.OverlayOptions[] = [];
   switch (options.positionFormat) {
-    case 'id':
+    case '{n}':
       images = getImagesByIndex(mainWindow, {
         tileGap: options.tileGap,
         tileBasePath,
@@ -191,11 +207,13 @@ export default async function tileJoiner(
         tileWidth: options.tileWidth,
         tileHeight: options.tileHeight,
         offset: options.offset,
+        positionFormat: options.positionFormat,
+        positionTemplate: options.positionTemplate,
       });
       break;
 
-    case 'x-y':
-    case 'y-x':
+    case '{x}-{y}':
+    case '{y}-{x}':
       images = getImagesByTilePosition(mainWindow, {
         tileGap: options.tileGap,
         tileBasePath,
@@ -206,7 +224,38 @@ export default async function tileJoiner(
         tileHeight: options.tileHeight,
         offset: options.offset,
         positionFormat: options.positionFormat,
+        positionTemplate: options.positionTemplate,
       });
+      break;
+
+    case 'template':
+      if (options.positionTemplate.includes('{x}') && options.positionTemplate.includes('{y}')) {
+        images = getImagesByTilePosition(mainWindow, {
+          tileGap: options.tileGap,
+          tileBasePath,
+          extension: options.inputExtension,
+          yQuantity: options.yQuantity,
+          xQuantity: options.xQuantity,
+          tileWidth: options.tileWidth,
+          tileHeight: options.tileHeight,
+          offset: options.offset,
+          positionFormat: options.positionFormat,
+          positionTemplate: options.positionTemplate,
+        });
+      } else if (options.positionTemplate.includes('{n}')) {
+        images = getImagesByIndex(mainWindow, {
+          tileGap: options.tileGap,
+          tileBasePath,
+          extension: options.inputExtension,
+          yQuantity: options.yQuantity,
+          xQuantity: options.xQuantity,
+          tileWidth: options.tileWidth,
+          tileHeight: options.tileHeight,
+          offset: options.offset,
+          positionFormat: options.positionFormat,
+          positionTemplate: options.positionTemplate,
+        });
+      }
       break;
   }
 
