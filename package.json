@@ -2,7 +2,7 @@
   "name": "tile-manager",
   "version": "1.2.2",
   "private": true,
-  "description": "Tile Manager",
+  "description": "Tile Manager is a tile joiner / multiplier / maker app made in SvelteKit & Electron",
   "main": "resources/app/electron.mjs",
   "type": "module",
   "author": "EnergyPatrikHU",
