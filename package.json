@@ -40,7 +40,7 @@
     "@sveltejs/kit": "^2.5.17",
     "@types/lodash": "^4.17.7",
     "@types/node": "^22.5.2",
-    "autoprefixer": "^10.4.19",
+    "autoprefixer": "^10.4.20",
     "concurrently": "^8.2.2",
     "cross-env-file": "^1.0.0",
     "dotenv": "^16.4.5",
