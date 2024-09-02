@@ -22,7 +22,7 @@
     "release": "npm run release-it:release && npm run pack:electron && npm run pack:vite && npm run build:electron:release"
   },
   "browserslist": [
-    "Chrome 89"
+    "last 2 chrome versions"
   ],
   "dependencies": {
     "@mdi/js": "^7.4.47",
