@@ -36,7 +36,7 @@
     "sharp": "^0.33.5"
   },
   "devDependencies": {
-    "@sveltejs/adapter-static": "^3.0.2",
+    "@sveltejs/adapter-static": "^3.0.4",
     "@sveltejs/kit": "^2.5.25",
     "@types/lodash": "^4.17.7",
     "@types/node": "^22.5.2",
