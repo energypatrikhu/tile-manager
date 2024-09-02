@@ -1,14 +1,14 @@
 {
-  "name": "tile-joiner",
+  "name": "tile-manager",
   "version": "1.2.0",
   "private": true,
-  "description": "Tile Joiner",
+  "description": "Tile Manager",
   "main": "resources/app/electron.mjs",
   "type": "module",
   "author": "EnergyPatrikHU",
   "repository": {
     "type": "git",
-    "url": "https://github.com/energypatrikhu/tile-joiner.git"
+    "url": "https://github.com/energypatrikhu/tile-manager.git"
   },
   "scripts": {
     "dev": "cross-env-file -p .env.dev.json concurrently --kill-others -n=svelte,electron -c='#ff3e00',blue \"vite dev\" \"node electron.esbuild.config.mjs && electron resources/app/electron.mjs\"",

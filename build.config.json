@@ -1,11 +1,11 @@
 {
-  "appId": "com.energypatrikhu.tile-joiner",
-  "productName": "Tile Joiner",
+  "appId": "com.energypatrikhu.tile-manager",
+  "productName": "Tile Manager",
   "compression": "maximum",
   "publish": {
     "provider": "github",
     "owner": "EnergyPatrikHU",
-    "repo": "tile-joiner",
+    "repo": "tile-manager",
     "releaseType": "release",
     "publishAutoUpdate": true
   },
