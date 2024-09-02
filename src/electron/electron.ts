@@ -63,8 +63,8 @@ electronContextMenu({
   showLookUpSelection: false,
   showSearchWithGoogle: false,
   showCopyImage: false,
-  showCopyLink: true,
-  showSelectAll: true,
+  showCopyLink: false,
+  showSelectAll: false,
   showInspectElement: false,
 });
 
