@@ -1,4 +1,5 @@
 import { build } from 'esbuild';
+import { existsSync } from 'fs';
 import { readFile, readdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 
@@ -7,6 +8,8 @@ const __destination = './resources/app';
 const isDev = process.env.NODE_ENV === 'dev';
 
 async function removeOldEntries(absoluteDir) {
+  if (!existsSync(absoluteDir)) return;
+
   for (const dirent of await readdir(absoluteDir, { withFileTypes: true })) {
     const direntDir = join(absoluteDir, dirent.name);
 
@@ -19,6 +22,8 @@ async function removeOldEntries(absoluteDir) {
 }
 
 async function searchEntries(absoluteDir) {
+  if (!existsSync(absoluteDir)) return;
+
   let entries = [];
   for (const dirent of await readdir(absoluteDir, { withFileTypes: true })) {
     const direntDir = join(absoluteDir, dirent.name);
