@@ -61,7 +61,7 @@
     "tailwindcss-all": "^0.0.2",
     "terser": "^5.31.1",
     "tslib": "^2.6.3",
-    "typescript": "^5.5.2",
+    "typescript": "^5.5.4",
     "vite": "^5.3.1"
   }
 }
