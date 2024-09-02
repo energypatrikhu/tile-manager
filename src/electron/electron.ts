@@ -18,16 +18,16 @@ let mainWindow: BrowserWindow | null = null;
 
 function createWindow() {
   const windowState = electronWindowState({
-    defaultWidth: 800,
-    defaultHeight: 600,
+    defaultWidth: 1280,
+    defaultHeight: 720,
   });
 
   mainWindow = new BrowserWindow({
     backgroundColor: 'black',
     titleBarStyle: 'default',
     autoHideMenuBar: false,
-    minWidth: 800,
-    minHeight: 600,
+    minWidth: 1280,
+    minHeight: 720,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: true,
