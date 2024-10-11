@@ -32,8 +32,8 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: true,
       spellcheck: true,
-      // devTools: isDev,
-      devTools: true,
+      devTools: isDev,
+      // devTools: true,
       preload: join(import.meta.dirname, 'preload.mjs'),
       disableBlinkFeatures: 'Auxclick',
       webSecurity: false,
@@ -48,9 +48,9 @@ function createWindow() {
     mainWindow.removeMenu();
   }
 
-  // if (isDev) {
-  mainWindow.webContents.openDevTools();
-  // }
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
 
   windowState.manage(mainWindow);
   mainWindow.on('close', () => {
