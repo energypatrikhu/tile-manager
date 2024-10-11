@@ -5,6 +5,8 @@ import { existsSync } from 'fs';
 import tileJoiner from './tile-joiner.js';
 import tileMultiplier from './tile-multiplier.js';
 import tileExtractor from './tile-extractor.js';
+import supportedExtensions from './supportedExtensions.js';
+import { basename, dirname } from 'path';
 
 export class EventRouter {
   constructor(ipcMain: Electron.IpcMain, mainWindow: Electron.BrowserWindow, isDev: boolean) {
@@ -20,6 +22,35 @@ export class EventRouter {
 
     ipcMain.on('showMessageBoxSync', (_, data) => {
       mainWindow.webContents.send('showMessageBoxSync', dialog.showMessageBoxSync(mainWindow, data));
+    });
+
+    ipcMain.on('selectFile', (_, data) => {
+      const result = dialog.showOpenDialogSync(mainWindow, {
+        properties: data.isMultiple ? ['openFile', 'multiSelections'] : ['openFile'],
+        filters: [
+          {
+            name: 'Images',
+            extensions: supportedExtensions,
+          },
+        ],
+      });
+
+      if (!result) {
+        mainWindow.webContents.send('selectFile', []);
+        return;
+      }
+
+      let files: Array<AppFile> = [];
+      for (const fullPath of result) {
+        const name = basename(fullPath);
+        files.push({
+          name,
+          path: fullPath.slice(0, fullPath.length - name.length),
+          fullPath,
+        });
+      }
+
+      mainWindow.webContents.send('selectFile', files);
     });
 
     ipcMain.on('getSizes', async (_, data) => {

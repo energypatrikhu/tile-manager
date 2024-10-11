@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import supportedExtensions from '../../libs/supportedExtensions';
+  import SelectFile from '../../components/SelectFile.svelte';
 
   let tileSizeCalculation: 'tile' | 'manual' = 'tile';
   let tileSizes = { width: 0, height: 0 };
@@ -9,7 +10,7 @@
   let tileNaming: '{n}' | '{x}-{y}' | '{y}-{x}' | 'template' = '{n}';
   let tileNamingTemplate: string = tileNaming;
   let indexOffset = 0;
-  let fullImage: FileList;
+  let fullImage: Array<AppFile> = [];
   let fullImagePath = '';
   let outputPath = '';
   let outputExtension = 'webp';
@@ -22,17 +23,20 @@
       width: fullImageSizes.width / tilesQuantity.xQuantity || 0,
       height: fullImageSizes.height / tilesQuantity.yQuantity || 0,
     };
+  } else {
+    tilesQuantity = {
+      xQuantity: Math.ceil(fullImageSizes.width / tileSizes.width) || 0,
+      yQuantity: Math.ceil(fullImageSizes.height / tileSizes.height) || 0,
+    };
   }
 
-  $: if (fullImage && fullImage.length > 0) {
-    let images = Array.from(fullImage).filter((file) => file.type.startsWith('image/'));
-
-    if (images.length > 0) {
-      console.log({ images });
-      fullImagePath = images[0].path;
-      window.electron.send('getSizes', images[0].path);
-    }
+  $: if (fullImage.length > 0) {
+    console.log({ fullImage });
+    fullImagePath = fullImage[0].fullPath;
+    window.electron.send('getSizes', fullImagePath);
   }
+
+  $: console.log({ fullImage });
 
   function startTileJoin() {
     if (
@@ -47,12 +51,24 @@
       fullImageSizes.height === 0 ||
       (tileNaming === 'template' && !tileNamingTemplate)
     ) {
+      console.log({
+        fullImagePath,
+        outputPath,
+        outputExtension,
+        tilesQuantity,
+        tileSizes,
+        fullImageSizes,
+        tileNaming,
+        tileNamingTemplate,
+      });
+
       if (fullImageSizes.width % tileSizes.width !== 0 || fullImageSizes.height % tileSizes.height !== 0) {
         window.electron.send('showMessageBoxSync', {
           title: 'Error',
-          message: 'Full image size must be divisible by tile size',
+          message: 'Full image size must be dividable by tile size',
           type: 'error',
         });
+        return;
       }
 
       window.electron.send('showMessageBoxSync', {
@@ -113,11 +129,7 @@
   <div class="flex flex-col">
     <span class="text-3xl border-b p-2">Full image</span>
     <div class="p-2 flex flex-col gap-2">
-      <input
-        type="file"
-        accept="image/*"
-        bind:files="{fullImage}"
-      />
+      <SelectFile bind:files="{fullImage}" />
       <div class="flex flex-col pl-2">
         <span>Image Width: {fullImageSizes.width}px</span>
         <span>Image Height: {fullImageSizes.height}px</span>

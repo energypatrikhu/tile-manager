@@ -109,6 +109,19 @@ interface ElectronEventData {
     };
   };
 
+  selectFile: {
+    send: {
+      event: 'showOpenDialogSync';
+      data: {
+        isMultiple: boolean;
+      };
+    };
+    receive: {
+      event: 'showOpenDialogSync';
+      data: Array<AppFile>;
+    };
+  };
+
   getSizes: {
     send: {
       event: 'getSizes';
@@ -229,3 +242,12 @@ interface ElectronEventData {
     };
   };
 }
+
+//
+// Types
+//
+declare type AppFile = {
+  name: string;
+  path: string;
+  fullPath: string;
+};

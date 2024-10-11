@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import supportedExtensions from '../libs/supportedExtensions';
+  import SelectFile from '../components/SelectFile.svelte';
 
   let tileGap = 0;
   let fullImageSizeCalculation: 'tile' | 'manual' = 'tile';
@@ -10,7 +11,7 @@
   let tileNaming: '{n}' | '{x}-{y}' | '{y}-{x}' | 'template' = '{n}';
   let tileNamingTemplate: string = tileNaming;
   let indexOffset = 0;
-  let tiles: FileList;
+  let tiles: Array<AppFile> = [];
   let tilePath = '';
   let outputPath = '';
   let outputExtension = 'webp';
@@ -30,14 +31,10 @@
     };
   }
 
-  $: if (tiles && tiles.length > 0) {
-    let images = Array.from(tiles).filter((file) => file.type.startsWith('image/'));
-
-    if (images.length > 0) {
-      console.log({ images });
-      tilePath = images[0].path;
-      window.electron.send('getSizes', images[0].path);
-    }
+  $: if (tiles.length > 0) {
+    console.log({ tiles });
+    tilePath = tiles[0].fullPath;
+    window.electron.send('getSizes', tilePath);
   }
 
   function startTileJoin() {
@@ -113,12 +110,11 @@
   <div class="flex flex-col">
     <span class="text-3xl border-b p-2">Tiles</span>
     <div class="p-2 flex flex-col gap-2">
-      <input
-        type="file"
-        multiple
-        accept="image/*"
+      <SelectFile
         bind:files="{tiles}"
+        multiple="{true}"
       />
+
       <div class="flex flex-col pl-2">
         <span>Tile Width: {tileSizes.width}px</span>
         <span>Tile Height: {tileSizes.height}px</span>
