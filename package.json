@@ -33,7 +33,8 @@
     "electron-window-state": "^5.0.3",
     "lodash": "4.17.21",
     "moment": "^2.30.1",
-    "sharp": "^0.33.5"
+    "sharp": "^0.33.5",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@electron/packager": "^18.3.4",
@@ -41,6 +42,7 @@
     "@sveltejs/kit": "^2.5.25",
     "@types/lodash": "^4.17.7",
     "@types/node": "^22.5.2",
+    "@types/uuid": "^10.0.0",
     "autoprefixer": "^10.4.20",
     "concurrently": "^8.2.2",
     "cross-env-file": "^1.0.0",
