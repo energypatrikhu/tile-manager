@@ -1,13 +1,21 @@
 <script lang="ts">
+  import { v4 as uuidv4 } from 'uuid';
+
   export let multiple = false;
   export let files: Array<AppFile> = [];
+
+  let transactionId: string;
 
   $: message =
     files.length === 0 ? 'none' : files.length > 1 ? `${files.length} file${files.length > 1 ? 's' : ''}` : files[0].name;
 
-  window.electron.receive('selectFile', (selectedFiles) => (files = selectedFiles));
+  window.electron.receive('selectFile', (selectedFiles) => {
+    if (selectedFiles.transactionId !== transactionId) return;
+    files = selectedFiles.files;
+  });
   function selectFile() {
-    window.electron.send('selectFile', { isMultiple: multiple });
+    transactionId = uuidv4();
+    window.electron.send('selectFile', { isMultiple: multiple, transactionId });
   }
 </script>
 

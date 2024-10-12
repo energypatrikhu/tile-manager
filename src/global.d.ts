@@ -114,11 +114,15 @@ interface ElectronEventData {
       event: 'showOpenDialogSync';
       data: {
         isMultiple: boolean;
+        transactionId: string;
       };
     };
     receive: {
       event: 'showOpenDialogSync';
-      data: Array<AppFile>;
+      data: {
+        files: Array<AppFile>;
+        transactionId: string;
+      };
     };
   };
 

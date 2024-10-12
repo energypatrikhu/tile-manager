@@ -36,7 +36,7 @@ export class EventRouter {
       });
 
       if (!result) {
-        mainWindow.webContents.send('selectFile', []);
+        mainWindow.webContents.send('selectFile', { files: [], transactionId: data.transactionId });
         return;
       }
 
@@ -50,7 +50,7 @@ export class EventRouter {
         });
       }
 
-      mainWindow.webContents.send('selectFile', files);
+      mainWindow.webContents.send('selectFile', { files, transactionId: data.transactionId });
     });
 
     ipcMain.on('getSizes', async (_, data) => {
