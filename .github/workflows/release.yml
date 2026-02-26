@@ -1,0 +1,126 @@
+name: Build and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: 'Version increment type'
+        required: true
+        type: choice
+        options:
+          - Patch
+          - Minor
+          - Major
+        default: Patch
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Calculate new version
+        id: version
+        run: |
+          $packageJson = Get-Content package.json -Raw | ConvertFrom-Json
+          $currentVersion = $packageJson.version
+          $versionParts = $currentVersion.Split('.')
+          $major = [int]$versionParts[0]
+          $minor = [int]$versionParts[1]
+          $patch = [int]$versionParts[2]
+
+          switch ("${{ inputs.increment }}") {
+            "Major" { $major++; $minor = 0; $patch = 0 }
+            "Minor" { $minor++; $patch = 0 }
+            "Patch" { $patch++ }
+          }
+
+          $newVersion = "$major.$minor.$patch"
+          echo "new_version=$newVersion" >> $env:GITHUB_OUTPUT
+          echo "New version will be: $newVersion"
+
+      - name: Update version in package.json
+        run: |
+          $packageJson = Get-Content package.json -Raw | ConvertFrom-Json
+          $packageJson.version = "${{ steps.version.outputs.new_version }}"
+          $packageJson | ConvertTo-Json -Depth 100 | Set-Content package.json
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          $previousTag = git describe --tags --abbrev=0 HEAD 2>$null
+          if (-not $previousTag) {
+            $previousTag = git rev-list --max-parents=0 HEAD
+            $changelogContent = "## What's Changed`n`nInitial release"
+          } else {
+            $commits = git log "$previousTag..HEAD" --pretty=format:"- %s (%h)" --no-merges
+            if ($commits) {
+              $changelogContent = "## What's Changed`n`n" + ($commits -join "`n")
+            } else {
+              $changelogContent = "## What's Changed`n`n- Version bump to ${{ steps.version.outputs.new_version }}"
+            }
+          }
+
+          # Save to file for GitHub release
+          $changelogContent | Out-File -FilePath changelog.txt -Encoding UTF8
+
+          # Output for display
+          Write-Host "Changelog:"
+          Write-Host $changelogContent
+
+      - name: Create Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}" || echo "No changes to commit"
+          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Release v${{ steps.version.outputs.new_version }}"
+          git push origin HEAD:${{ github.ref }}
+          git push origin "v${{ steps.version.outputs.new_version }}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: Release v${{ steps.version.outputs.new_version }}
+          body_path: changelog.txt
+          draft: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Build Electron app
+        run: bun run pack:electron && bun run pack:vite && bun run build:electron:release
+        env:
+          NODE_ENV: prod
+          APP_STATE: release
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Publish Release
+        run: |
+          $release = gh release view "v${{ steps.version.outputs.new_version }}" --json id | ConvertFrom-Json
+          gh release edit "v${{ steps.version.outputs.new_version }}" --draft=false
+          Write-Host "Release v${{ steps.version.outputs.new_version }} published successfully"
+        env:
+          GH_TOKEN: ${{ github.token }}
+

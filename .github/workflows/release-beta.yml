@@ -1,0 +1,143 @@
+name: Build and Release Beta
+
+on:
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: 'Version increment type'
+        required: true
+        type: choice
+        options:
+          - Patch
+          - Minor
+          - Major
+        default: Patch
+
+jobs:
+  build-beta:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Calculate new version
+        id: version
+        run: |
+          $packageJson = Get-Content package.json -Raw | ConvertFrom-Json
+          $currentVersion = $packageJson.version
+
+          # Check if current version is a beta
+          if ($currentVersion -match '^(\d+)\.(\d+)\.(\d+)-beta\.(\d+)$') {
+            $major = [int]$Matches[1]
+            $minor = [int]$Matches[2]
+            $patch = [int]$Matches[3]
+            $beta = [int]$Matches[4]
+
+            # If it's already a beta, increment based on choice or increment beta number
+            switch ("${{ inputs.increment }}") {
+              "Major" { $major++; $minor = 0; $patch = 0; $beta = 1 }
+              "Minor" { $minor++; $patch = 0; $beta = 1 }
+              "Patch" { $beta++ }  # Just increment beta number
+            }
+          } else {
+            # Not a beta, parse regular version
+            $versionParts = $currentVersion.Split('.')
+            $major = [int]$versionParts[0]
+            $minor = [int]$versionParts[1]
+            $patch = [int]$versionParts[2]
+
+            switch ("${{ inputs.increment }}") {
+              "Major" { $major++; $minor = 0; $patch = 0 }
+              "Minor" { $minor++; $patch = 0 }
+              "Patch" { $patch++ }
+            }
+            $beta = 1
+          }
+
+          $newVersion = "$major.$minor.$patch-beta.$beta"
+          echo "new_version=$newVersion" >> $env:GITHUB_OUTPUT
+          echo "New version will be: $newVersion"
+
+      - name: Update version in package.json
+        run: |
+          $packageJson = Get-Content package.json -Raw | ConvertFrom-Json
+          $packageJson.version = "${{ steps.version.outputs.new_version }}"
+          $packageJson | ConvertTo-Json -Depth 100 | Set-Content package.json
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          $previousTag = git describe --tags --abbrev=0 HEAD 2>$null
+          if (-not $previousTag) {
+            $previousTag = git rev-list --max-parents=0 HEAD
+            $changelogContent = "## What's Changed`n`nInitial beta release"
+          } else {
+            $commits = git log "$previousTag..HEAD" --pretty=format:"- %s (%h)" --no-merges
+            if ($commits) {
+              $changelogContent = "## What's Changed`n`n" + ($commits -join "`n")
+            } else {
+              $changelogContent = "## What's Changed`n`n- Version bump to ${{ steps.version.outputs.new_version }}"
+            }
+          }
+
+          # Save to file for GitHub release
+          $changelogContent | Out-File -FilePath changelog.txt -Encoding UTF8
+
+          # Output for display
+          Write-Host "Changelog:"
+          Write-Host $changelogContent
+
+      - name: Create Git tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}" || echo "No changes to commit"
+          git tag -a "v${{ steps.version.outputs.new_version }}" -m "Pre-release v${{ steps.version.outputs.new_version }}"
+          git push origin HEAD:${{ github.ref }}
+          git push origin "v${{ steps.version.outputs.new_version }}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.new_version }}
+          name: Beta Release v${{ steps.version.outputs.new_version }}
+          body_path: changelog.txt
+          draft: true
+          prerelease: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Build Electron app (Beta)
+        run: bun run pack:electron:beta && bun run pack:vite:beta && bun run build:electron:release:beta
+        env:
+          NODE_ENV: prod
+          APP_STATE: beta
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Publish Release
+        run: |
+          $release = gh release view "v${{ steps.version.outputs.new_version }}" --json id | ConvertFrom-Json
+          gh release edit "v${{ steps.version.outputs.new_version }}" --draft=false
+          Write-Host "Beta release v${{ steps.version.outputs.new_version }} published successfully"
+        env:
+          GH_TOKEN: ${{ github.token }}
