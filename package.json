@@ -11,15 +11,15 @@
     "url": "https://github.com/energypatrikhu/tile-manager.git"
   },
   "scripts": {
-    "dev": "cross-env-file -p .env.dev.json concurrently --kill-others -n=svelte,electron -c='#ff3e00',blue \"vite dev\" \"node electron.esbuild.config.mjs && electron resources/app/electron.mjs\"",
-    "clear-dist": "node rm.mjs ./dist",
-    "pack:electron": "cross-env-file -p .env.prod.json node electron.esbuild.config.mjs",
-    "pack:vite": "cross-env-file -p .env.prod.json vite build",
-    "build:electron": "npm run clear-dist && cross-env-file -p .env.prod.json electron-builder -w --config build.config.json",
-    "build:electron:release": "npm run clear-dist && cross-env-file -p .env.prod.json electron-builder -p always -w --config build.config.json",
-    "release-it:release": "cross-env-file -p .env.prod.json release-it --config release.release-it.json",
-    "build": "npm run pack:electron && npm run pack:vite && npm run build:electron",
-    "release": "npm run release-it:release && npm run pack:electron && npm run pack:vite && npm run build:electron:release"
+    "dev": "cross-env-file -p .env.dev.json concurrently --kill-others -n=svelte,electron -c='#ff3e00',blue \"vite dev\" \"bun electron.esbuild.config.mjs && electron resources/app/electron.mjs\"",
+    "clear-dist": "bun rm.mjs ./dist",
+    "pack:electron": "bun electron.esbuild.config.mjs",
+    "pack:vite": "vite build",
+    "build:electron": "bun run clear-dist && electron-builder -w --config build.config.json",
+    "build:electron:release": "bun run clear-dist && electron-builder -p always -w --config build.config.json",
+    "release-it:release": "release-it --config release.release-it.json",
+    "build": "bun run pack:electron && bun run pack:vite && bun run build:electron",
+    "release": "bun run release-it:release && bun run pack:electron && bun run pack:vite && bun run build:electron:release"
   },
   "browserslist": [
     "last 2 chrome versions"
@@ -51,7 +51,6 @@
     "electron-builder": "^24.13.3",
     "electron-connect": "^0.6.3",
     "esbuild": "^0.23.1",
-    "npm-run-all": "^4.1.5",
     "postcss": "^8.4.44",
     "postcss-advanced-variables": "^4.0.0",
     "postcss-calc": "^10.0.2",
