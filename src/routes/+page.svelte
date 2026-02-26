@@ -1,25 +1,25 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import supportedExtensions from '../libs/supportedExtensions';
-  import SelectFile from '../components/SelectFile.svelte';
+  import { onMount } from "svelte";
+  import SelectFile from "../components/SelectFile.svelte";
+  import supportedExtensions from "../libs/supportedExtensions";
 
   let tileGap = 0;
-  let fullImageSizeCalculation: 'tile' | 'manual' = 'tile';
+  let fullImageSizeCalculation: "tile" | "manual" = "tile";
   let tileSizes = { width: 0, height: 0 };
   let fullImageSizes = { width: 0, height: 0 };
   let fullImageSizesByTiles = { xQuantity: 0, yQuantity: 0 };
-  let tileNaming: '{n}' | '{x}-{y}' | '{y}-{x}' | 'template' = '{n}';
+  let tileNaming: "{n}" | "{x}-{y}" | "{y}-{x}" | "template" = "{n}";
   let tileNamingTemplate: string = tileNaming;
   let indexOffset = 0;
   let tiles: Array<AppFile> = [];
-  let tilePath = '';
-  let outputPath = '';
-  let outputExtension = 'webp';
+  let tilePath = "";
+  let outputPath = "";
+  let outputExtension = "png";
   let consoleLogs: string[] = [];
   let isRunning = false;
   let consoleDiv: HTMLDivElement | null = null;
 
-  $: if (fullImageSizeCalculation === 'tile') {
+  $: if (fullImageSizeCalculation === "tile") {
     fullImageSizes = {
       width: tileSizes.width * fullImageSizesByTiles.xQuantity || 0,
       height: tileSizes.height * fullImageSizesByTiles.yQuantity || 0,
@@ -34,7 +34,7 @@
   $: if (tiles.length > 0) {
     console.log({ tiles });
     tilePath = tiles[0].fullPath;
-    window.electron.send('getSizes', tilePath);
+    window.electron.send("getSizes", tilePath);
   }
 
   function startTileJoin() {
@@ -48,12 +48,12 @@
       tileSizes.height === 0 ||
       fullImageSizes.width === 0 ||
       fullImageSizes.height === 0 ||
-      (tileNaming === 'template' && !tileNamingTemplate)
+      (tileNaming === "template" && !tileNamingTemplate)
     ) {
-      window.electron.send('showMessageBoxSync', {
-        title: 'Error',
-        message: 'Please fill all fields',
-        type: 'error',
+      window.electron.send("showMessageBoxSync", {
+        title: "Error",
+        message: "Please fill all fields",
+        type: "error",
       });
       return;
     }
@@ -61,10 +61,10 @@
     consoleLogs = [];
     isRunning = true;
 
-    window.electron.send('joinTiles', {
+    window.electron.send("joinTiles", {
       tileGap,
       inputPath: tilePath,
-      inputExtension: tilePath.split('.').pop()!,
+      inputTiles: tiles.map((file) => file.fullPath),
       outputPath,
       outputExtension,
       xQuantity: fullImageSizesByTiles.xQuantity,
@@ -80,18 +80,23 @@
   }
 
   onMount(() => {
-    window.electron.receive('getSizes', (data) => (tileSizes = data.sizes));
+    window.electron.receive("getSizes", (data) => (tileSizes = data.sizes));
 
-    window.electron.receive('showSaveDialogSync', (path) => {
+    window.electron.receive("showSaveDialogSync", (path) => {
       if (!path) return;
 
-      const extension = path.split('.').pop();
-      outputExtension = extension ? (supportedExtensions.includes(extension) ? extension : outputExtension) : outputExtension;
-      outputPath = path.slice(0, path.lastIndexOf('.')) + '.' + outputExtension;
+      const extension = path.split(".").pop();
+      outputExtension =
+        extension ?
+          supportedExtensions.includes(extension) ?
+            extension
+          : outputExtension
+        : outputExtension;
+      outputPath = path.slice(0, path.lastIndexOf(".")) + "." + outputExtension;
     });
 
-    window.electron.receive('joinTilesFeedback', (data) => {
-      if (data.message === 'Tiles joined successfully' || data.message === 'Cancelled process') {
+    window.electron.receive("joinTilesFeedback", (data) => {
+      if (data.message === "Tiles joined successfully" || data.message === "Cancelled process") {
         isRunning = false;
       }
 
@@ -137,7 +142,7 @@
       </div>
 
       <div class="flex flex-col w-fit gap-2">
-        {#if fullImageSizeCalculation === 'tile'}
+        {#if fullImageSizeCalculation === "tile"}
           <label>
             <span class="text-xl">x</span> quantity:
             <input
@@ -156,7 +161,7 @@
             />
             ( {fullImageSizes.height} px )
           </label>
-        {:else if fullImageSizeCalculation === 'manual'}
+        {:else if fullImageSizeCalculation === "manual"}
           <label>
             Width:
             <input
@@ -210,13 +215,13 @@
       </div>
     </div>
 
-    {#if tileNaming === 'template'}
+    {#if tileNaming === "template"}
       <div class="p-2 flex flex-col gap-2">
         <div class="flex flex-col">
-          <span class="font-light">Possible templates: {'{n} {x} {y}'}</span>
-          <span class="font-light"><span class="font-normal">{'{n} =>'}</span> indexed / incremental / by id</span>
-          <span class="font-light"><span class="font-normal">{'{x}, {y} =>'}</span> by x,y or y,x coordinate</span>
-          <span class="font-light">Example: 'tile ({'{n}'})', 'tile-({'{x}-{y}'})', ...</span>
+          <span class="font-light">Possible templates: {"{n} {x} {y}"}</span>
+          <span class="font-light"><span class="font-normal">{"{n} =>"}</span> indexed / incremental / by id</span>
+          <span class="font-light"><span class="font-normal">{"{x}, {y} =>"}</span> by x,y or y,x coordinate</span>
+          <span class="font-light">Example: 'tile ({"{n}"})', 'tile-({"{x}-{y}"})', ...</span>
         </div>
         <div>
           <input
@@ -259,7 +264,7 @@
           }}">Select output</button
         >
         <span class="font-light"> Selected: </span>
-        <span>{outputPath || 'N/A'}</span>
+        <span>{outputPath || "N/A"}</span>
       </div>
     </div>
   </div>

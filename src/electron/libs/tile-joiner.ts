@@ -1,44 +1,52 @@
-import { spawnSync } from 'child_process';
-import { dialog } from 'electron';
-import { existsSync } from 'fs';
-import { basename, join } from 'path';
-import Sharp from 'sharp';
+import { spawnSync } from "child_process";
+import { dialog } from "electron";
+import { existsSync } from "fs";
+import { basename } from "path";
+import Sharp from "sharp";
 
 function getImagesByIndex(
   mainWindow: Electron.BrowserWindow,
   options: {
     tileGap: number;
-    tileBasePath: string;
-    extension: string;
+    inputTiles: string[];
     yQuantity: number;
     xQuantity: number;
     tileWidth: number;
     tileHeight: number;
     offset: number;
-    positionFormat: '{n}' | 'template';
+    positionFormat: "{n}" | "template";
     positionTemplate?: string;
   },
 ) {
   const images = [];
+
+  const tiles: Record<number, string> = {};
+  for (const inputTile of options.inputTiles) {
+    // parseInt("img (001).png".match(/\d+/))
+    const tileIndex = parseInt(basename(inputTile).match(/\d+/)![0], 10);
+    tiles[tileIndex] = inputTile;
+  }
 
   let i = options.offset - 1;
   for (let y = 0; y < options.yQuantity; y++) {
     for (let x = 0; x < options.xQuantity; x++) {
       ++i;
 
-      const path = join(
-        options.tileBasePath,
-        `${
-          options.positionFormat === 'template' && options.positionTemplate
-            ? options.positionTemplate.replace('{n}', i.toString())
-            : options.positionFormat.replace('{n}', i.toString())
-        }.${options.extension}`,
-      );
+      // const path = join(
+      //   options.tileBasePath,
+      //   `${
+      //     options.positionFormat === "template" && options.positionTemplate
+      //       ? options.positionTemplate.replace("{n}", i.toString())
+      //       : options.positionFormat.replace("{n}", i.toString())
+      //   }.${options.extension}`,
+      // );
 
-      if (!existsSync(path)) {
-        console.log(`X | Tile '${path}' not found`);
-        mainWindow.webContents.send('joinTilesFeedback', {
-          message: `Tile '${path}' not found`,
+      const tile = tiles[i];
+
+      if (!existsSync(tile)) {
+        console.log(`X | Tile '${tile}' not found`);
+        mainWindow.webContents.send("joinTilesFeedback", {
+          message: `Tile '${tile}' not found`,
         });
         continue;
       }
@@ -59,14 +67,14 @@ function getImagesByIndex(
       }
 
       images.push({
-        input: path,
+        input: tile,
         top,
         left,
       });
 
-      console.log(`  | Tile '${path}' added, x: ${x}, y: ${y}, top: ${top}px, left: ${left}px`);
-      mainWindow.webContents.send('joinTilesFeedback', {
-        message: `Tile '${path}' added, x: ${x}, y: ${y}, top: ${top}px, left: ${left}px`,
+      console.log(`  | Tile '${tile}' added, x: ${x}, y: ${y}, top: ${top}px, left: ${left}px`);
+      mainWindow.webContents.send("joinTilesFeedback", {
+        message: `Tile '${tile}' added, x: ${x}, y: ${y}, top: ${top}px, left: ${left}px`,
       });
     }
   }
@@ -78,34 +86,65 @@ function getImagesByTilePosition(
   mainWindow: Electron.BrowserWindow,
   options: {
     tileGap: number;
-    tileBasePath: string;
-    extension: string;
+    inputTiles: string[];
     yQuantity: number;
     xQuantity: number;
     tileWidth: number;
     tileHeight: number;
     offset: number;
-    positionFormat: '{x}-{y}' | '{y}-{x}' | 'template';
+    positionFormat: "{x}-{y}" | "{y}-{x}" | "template";
     positionTemplate?: string;
   },
 ) {
   const images = [];
 
+  const tiles: Record<string, string> = {};
+  for (const inputTile of options.inputTiles) {
+    let tilePosition: string;
+
+    if (options.positionFormat === "template" && options.positionTemplate) {
+      // Extract position based on template pattern
+      // Convert template to regex pattern: "tile_{x}_{y}.png" => /tile_(\d+)_(\d+)\.png/
+      const regexPattern = options.positionTemplate
+        .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special chars
+        .replace(/\{x\}/g, "(\\d+)")
+        .replace(/\{y\}/g, "(\\d+)");
+
+      const match = basename(inputTile).match(new RegExp(regexPattern));
+      if (match) {
+        const xIndex = options.positionTemplate.indexOf("{x}") < options.positionTemplate.indexOf("{y}") ? 1 : 2;
+        const yIndex = xIndex === 1 ? 2 : 1;
+        tilePosition = `${match[xIndex]}-${match[yIndex]}`;
+      } else {
+        continue;
+      }
+    } else {
+      // "img (0-0).png" => "0-0"
+      tilePosition = basename(inputTile).match(/(\d+[-]\d+)|(\d+[_]\d+)/)![0];
+    }
+
+    tiles[tilePosition] = inputTile;
+  }
+
   for (let y = options.offset; y < options.yQuantity + options.offset; y++) {
     for (let x = options.offset; x < options.xQuantity + options.offset; x++) {
-      const path = join(
-        options.tileBasePath,
-        `${
-          options.positionFormat === 'template' && options.positionTemplate
-            ? options.positionTemplate.replace('{x}', x.toString()).replace('{y}', y.toString())
-            : options.positionFormat.replace('{x}', x.toString()).replace('{y}', y.toString())
-        }.${options.extension}`,
-      );
+      // const path = join(
+      //   options.tileBasePath,
+      //   `${
+      //     options.positionFormat === "template" && options.positionTemplate
+      //       ? options.positionTemplate.replace("{x}", x.toString()).replace("{y}", y.toString())
+      //       : options.positionFormat.replace("{x}", x.toString()).replace("{y}", y.toString())
+      //   }.${options.extension}`,
+      // );
 
-      if (!existsSync(path)) {
-        console.log(`X | Tile '${path}' not found`);
-        mainWindow.webContents.send('joinTilesFeedback', {
-          message: `Tile '${path}' not found`,
+      const positionKey = `${x}-${y}`;
+      const altPositionKey = `${y}-${x}`;
+      const tile = tiles[positionKey] || tiles[altPositionKey];
+
+      if (!existsSync(tile)) {
+        console.log(`X | Tile '${tile}' not found`);
+        mainWindow.webContents.send("joinTilesFeedback", {
+          message: `Tile '${tile}' not found`,
         });
         continue;
       }
@@ -126,14 +165,14 @@ function getImagesByTilePosition(
       }
 
       images.push({
-        input: path,
+        input: tile,
         top,
         left,
       });
 
-      console.log(`  | Tile '${path}' added, x: ${x}, y: ${y}, top: ${top}px, left: ${left}px`);
-      mainWindow.webContents.send('joinTilesFeedback', {
-        message: `Tile '${path}' added, x: ${x}, y: ${y}, top: ${top}px, left: ${left}px`,
+      console.log(`  | Tile '${tile}' added, x: ${x}, y: ${y}, top: ${top}px, left: ${left}px`);
+      mainWindow.webContents.send("joinTilesFeedback", {
+        message: `Tile '${tile}' added, x: ${x}, y: ${y}, top: ${top}px, left: ${left}px`,
       });
     }
   }
@@ -146,7 +185,7 @@ export default async function tileJoiner(
   options: {
     tileGap: number;
     inputPath: string;
-    inputExtension: string;
+    inputTiles: string[];
     outputPath: string;
     outputExtension: string;
     xQuantity: number;
@@ -156,40 +195,40 @@ export default async function tileJoiner(
     fullImageWidth: number;
     fullImageHeight: number;
     offset: number;
-    positionFormat: '{n}' | '{x}-{y}' | '{y}-{x}' | 'template';
+    positionFormat: "{n}" | "{x}-{y}" | "{y}-{x}" | "template";
     positionTemplate: string;
   },
 ) {
   if (
     (
       await dialog.showMessageBox({
-        type: 'question',
-        title: 'Joining tiles',
+        type: "question",
+        title: "Joining tiles",
         message: `Joining ${
           options.xQuantity * options.yQuantity
         } tile(s), this may take a while. Do you want to continue?\n\nOutput path: ${options.outputPath}`,
-        buttons: ['Cancel', 'Yes'],
+        buttons: ["Cancel", "Yes"],
       })
     ).response === 0
   ) {
     if (
       (
         await dialog.showMessageBox({
-          type: 'warning',
-          title: 'Cancel joining tiles?',
-          message: 'Are you sure you want to cancel the process?',
-          buttons: ['No', 'Yes'],
+          type: "warning",
+          title: "Cancel joining tiles?",
+          message: "Are you sure you want to cancel the process?",
+          buttons: ["No", "Yes"],
         })
       ).response !== 0
     ) {
-      mainWindow.webContents.send('joinTilesFeedback', {
-        message: 'Cancelled process',
+      mainWindow.webContents.send("joinTilesFeedback", {
+        message: "Cancelled process",
       });
       return;
     }
   }
 
-  mainWindow.webContents.send('joinTilesFeedback', {
+  mainWindow.webContents.send("joinTilesFeedback", {
     message: "Starting to join tiles, this may take a while. Don't close the app",
   });
 
@@ -197,11 +236,10 @@ export default async function tileJoiner(
 
   let images: Sharp.OverlayOptions[] = [];
   switch (options.positionFormat) {
-    case '{n}':
+    case "{n}":
       images = getImagesByIndex(mainWindow, {
         tileGap: options.tileGap,
-        tileBasePath,
-        extension: options.inputExtension,
+        inputTiles: options.inputTiles,
         yQuantity: options.yQuantity,
         xQuantity: options.xQuantity,
         tileWidth: options.tileWidth,
@@ -212,12 +250,11 @@ export default async function tileJoiner(
       });
       break;
 
-    case '{x}-{y}':
-    case '{y}-{x}':
+    case "{x}-{y}":
+    case "{y}-{x}":
       images = getImagesByTilePosition(mainWindow, {
         tileGap: options.tileGap,
-        tileBasePath,
-        extension: options.inputExtension,
+        inputTiles: options.inputTiles,
         yQuantity: options.yQuantity,
         xQuantity: options.xQuantity,
         tileWidth: options.tileWidth,
@@ -228,12 +265,11 @@ export default async function tileJoiner(
       });
       break;
 
-    case 'template':
-      if (options.positionTemplate.includes('{x}') && options.positionTemplate.includes('{y}')) {
+    case "template":
+      if (options.positionTemplate.includes("{x}") && options.positionTemplate.includes("{y}")) {
         images = getImagesByTilePosition(mainWindow, {
           tileGap: options.tileGap,
-          tileBasePath,
-          extension: options.inputExtension,
+          inputTiles: options.inputTiles,
           yQuantity: options.yQuantity,
           xQuantity: options.xQuantity,
           tileWidth: options.tileWidth,
@@ -242,11 +278,10 @@ export default async function tileJoiner(
           positionFormat: options.positionFormat,
           positionTemplate: options.positionTemplate,
         });
-      } else if (options.positionTemplate.includes('{n}')) {
+      } else if (options.positionTemplate.includes("{n}")) {
         images = getImagesByIndex(mainWindow, {
           tileGap: options.tileGap,
-          tileBasePath,
-          extension: options.inputExtension,
+          inputTiles: options.inputTiles,
           yQuantity: options.yQuantity,
           xQuantity: options.xQuantity,
           tileWidth: options.tileWidth,
@@ -261,8 +296,8 @@ export default async function tileJoiner(
 
   console.log(`\nJoining ${images.length} tiles...`);
 
-  mainWindow.webContents.send('joinTilesFeedback', {
-    message: 'Joining tiles, this may take a while.',
+  mainWindow.webContents.send("joinTilesFeedback", {
+    message: "Joining tiles, this may take a while.",
   });
 
   Sharp({
@@ -282,38 +317,38 @@ export default async function tileJoiner(
     })
     .toFile(options.outputPath, async (err) => {
       if (err) {
-        console.log('X | Error joining tiles:', err);
-        mainWindow.webContents.send('joinTilesFeedback', {
-          message: 'Error joining tiles!',
+        console.log("X | Error joining tiles:", err);
+        mainWindow.webContents.send("joinTilesFeedback", {
+          message: "Error joining tiles!",
         });
         dialog.showMessageBoxSync({
-          type: 'error',
-          title: 'Error',
-          message: 'Error joining tiles',
+          type: "error",
+          title: "Error",
+          message: "Error joining tiles",
           detail: err.message,
         });
         return;
       }
 
-      console.log('  | Tiles joined successfully');
-      mainWindow.webContents.send('joinTilesFeedback', {
-        message: 'Tiles joined successfully',
+      console.log("  | Tiles joined successfully");
+      mainWindow.webContents.send("joinTilesFeedback", {
+        message: "Tiles joined successfully",
       });
 
       const showMessageBox_result = await dialog.showMessageBox({
-        type: 'info',
-        title: 'Success',
-        message: 'Tiles joined successfully',
-        buttons: ['OK', 'Open folder', 'Open file'],
+        type: "info",
+        title: "Success",
+        message: "Tiles joined successfully",
+        buttons: ["OK", "Open folder", "Open file"],
       });
 
       switch (showMessageBox_result.response) {
         case 1: {
-          spawnSync('explorer', [options.outputPath.slice(0, -basename(options.outputPath).length)], { shell: true });
+          spawnSync("explorer", [options.outputPath.slice(0, -basename(options.outputPath).length)], { shell: true });
           break;
         }
         case 2: {
-          spawnSync('explorer', [options.outputPath], { shell: true });
+          spawnSync("explorer", [options.outputPath], { shell: true });
           break;
         }
       }

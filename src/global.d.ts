@@ -18,12 +18,12 @@ declare namespace Electron {
 
 type AppElectronSendEvent = <K extends keyof ElectronEventData>(
   event: K,
-  data: ElectronEventData[K]['receive']['data'],
+  data: ElectronEventData[K]["receive"]["data"],
 ) => void;
 
 type AppElectronReceiveEvent = <K extends keyof ElectronEventData>(
   event: K,
-  fn: (event: Electron.IpcMainEvent, data: ElectronEventData[K]['send']['data']) => void,
+  fn: (event: Electron.IpcMainEvent, data: ElectronEventData[K]["send"]["data"]) => void,
 ) => void;
 
 //
@@ -39,12 +39,12 @@ declare interface Window {
 
 type WindowElectronSendEvent = <K extends keyof ElectronEventData>(
   event: K,
-  data: ElectronEventData[K]['send']['data'],
+  data: ElectronEventData[K]["send"]["data"],
 ) => void;
 
 type WindowElectronReceiveEvent = <K extends keyof ElectronEventData>(
   event: K,
-  fn: (data: ElectronEventData[K]['receive']['data']) => void,
+  fn: (data: ElectronEventData[K]["receive"]["data"]) => void,
 ) => void;
 
 //
@@ -54,7 +54,7 @@ interface ElectronEventData {
   update: {
     send: {};
     receive: {
-      event: 'update';
+      event: "update";
       data: {
         message: string;
       };
@@ -63,10 +63,10 @@ interface ElectronEventData {
 
   ready: {
     send: {
-      event: 'ready';
+      event: "ready";
     };
     receive: {
-      event: 'ready';
+      event: "ready";
       data: {
         versions: {
           electronVersion: string;
@@ -78,47 +78,47 @@ interface ElectronEventData {
 
   showOpenDialogSync: {
     send: {
-      event: 'showOpenDialogSync';
+      event: "showOpenDialogSync";
       data: Electron.OpenDialogSyncOptions;
     };
     receive: {
-      event: 'showOpenDialogSync';
+      event: "showOpenDialogSync";
       data: string[] | undefined;
     };
   };
 
   showSaveDialogSync: {
     send: {
-      event: 'showSaveDialogSync';
+      event: "showSaveDialogSync";
       data: Electron.SaveDialogSyncOptions;
     };
     receive: {
-      event: 'showSaveDialogSync';
+      event: "showSaveDialogSync";
       data: string | undefined;
     };
   };
 
   showMessageBoxSync: {
     send: {
-      event: 'showMessageBoxSync';
+      event: "showMessageBoxSync";
       data: Electron.MessageBoxSyncOptions;
     };
     receive: {
-      event: 'showMessageBoxSync';
+      event: "showMessageBoxSync";
       data: number;
     };
   };
 
   selectFile: {
     send: {
-      event: 'showOpenDialogSync';
+      event: "showOpenDialogSync";
       data: {
         isMultiple: boolean;
         transactionId: string;
       };
     };
     receive: {
-      event: 'showOpenDialogSync';
+      event: "showOpenDialogSync";
       data: {
         files: Array<AppFile>;
         transactionId: string;
@@ -128,11 +128,11 @@ interface ElectronEventData {
 
   getSizes: {
     send: {
-      event: 'getSizes';
+      event: "getSizes";
       data: string;
     };
     receive: {
-      event: 'getSizes';
+      event: "getSizes";
       data: {
         sizes: {
           width: number;
@@ -144,11 +144,11 @@ interface ElectronEventData {
 
   joinTiles: {
     send: {
-      event: 'joinTiles';
+      event: "joinTiles";
       data: {
         tileGap: number;
         inputPath: string;
-        inputExtension: string;
+        inputTiles: string[];
         outputPath: string;
         outputExtension: string;
         xQuantity: number;
@@ -158,12 +158,12 @@ interface ElectronEventData {
         fullImageWidth: number;
         fullImageHeight: number;
         offset: number;
-        positionFormat: '{n}' | '{x}-{y}' | '{y}-{x}' | 'template';
+        positionFormat: "{n}" | "{x}-{y}" | "{y}-{x}" | "template";
         positionTemplate: string;
       };
     };
     receive: {
-      event: 'joinTiles';
+      event: "joinTiles";
       data: string;
     };
   };
@@ -171,7 +171,7 @@ interface ElectronEventData {
   joinTilesFeedback: {
     send: {};
     receive: {
-      event: 'joinTilesFeedback';
+      event: "joinTilesFeedback";
       data: {
         message: string;
       };
@@ -180,7 +180,7 @@ interface ElectronEventData {
 
   multiplyTile: {
     send: {
-      event: 'multiplyTile';
+      event: "multiplyTile";
       data: {
         tileGap: number;
         inputPath: string;
@@ -196,7 +196,7 @@ interface ElectronEventData {
       };
     };
     receive: {
-      event: 'multiplyTile';
+      event: "multiplyTile";
       data: string;
     };
   };
@@ -204,7 +204,7 @@ interface ElectronEventData {
   multiplyTileFeedback: {
     send: {};
     receive: {
-      event: 'multiplyTileFeedback';
+      event: "multiplyTileFeedback";
       data: {
         message: string;
       };
@@ -213,7 +213,7 @@ interface ElectronEventData {
 
   extractTiles: {
     send: {
-      event: 'extractTiles';
+      event: "extractTiles";
       data: {
         inputPath: string;
         inputExtension: string;
@@ -226,12 +226,12 @@ interface ElectronEventData {
         fullImageWidth: number;
         fullImageHeight: number;
         offset: number;
-        positionFormat: '{n}' | '{x}-{y}' | '{y}-{x}' | 'template';
+        positionFormat: "{n}" | "{x}-{y}" | "{y}-{x}" | "template";
         positionTemplate: string;
       };
     };
     receive: {
-      event: 'extractTiles';
+      event: "extractTiles";
       data: string;
     };
   };
@@ -239,7 +239,7 @@ interface ElectronEventData {
   extractTilesFeedback: {
     send: {};
     receive: {
-      event: 'extractTilesFeedback';
+      event: "extractTilesFeedback";
       data: {
         message: string;
       };
