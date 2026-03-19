@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       increment:
-        description: "Version increment type"
+        description: 'Version increment type'
         required: true
         type: choice
         options:
@@ -71,7 +71,7 @@ jobs:
           }
 
           $newVersion = "$major.$minor.$patch-beta.$beta"
-          echo "new_version=$newVersion" >> $env:GITEA_OUTPUT
+          echo "new_version=$newVersion" >> $env:GITHUB_OUTPUT
           echo "New version will be: $newVersion"
 
       - name: Update version in package.json
@@ -96,7 +96,7 @@ jobs:
             }
           }
 
-          # Save to file for Gitea release
+          # Save to file for GitHub release
           $changelogContent | Out-File -FilePath changelog.txt -Encoding UTF8
 
           # Output for display
@@ -105,17 +105,17 @@ jobs:
 
       - name: Create Git tag
         run: |
-          git config user.name "gitea-actions[bot]"
-          git config user.email "gitea-actions[bot]@users.noreply.gitea.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add package.json
           git commit -m "chore: bump version to ${{ steps.version.outputs.new_version }}" || echo "No changes to commit"
           git tag -a "v${{ steps.version.outputs.new_version }}" -m "Pre-release v${{ steps.version.outputs.new_version }}"
-          git push origin HEAD:${{ gitea.ref }}
+          git push origin HEAD:${{ github.ref }}
           git push origin "v${{ steps.version.outputs.new_version }}"
         env:
-          GITHUB_TOKEN: ${{ secrets.GA_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Create Gitea Release
+      - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
@@ -125,14 +125,14 @@ jobs:
           draft: true
           prerelease: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GA_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Build Electron app (Beta)
         run: bun run pack:electron:beta && bun run pack:vite:beta && bun run build:electron:release:beta
         env:
           NODE_ENV: prod
           APP_STATE: beta
-          GH_TOKEN: ${{ secrets.GA_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
 
       - name: Publish Release
         run: |
@@ -140,4 +140,4 @@ jobs:
           gh release edit "v${{ steps.version.outputs.new_version }}" --draft=false
           Write-Host "Beta release v${{ steps.version.outputs.new_version }} published successfully"
         env:
-          GH_TOKEN: ${{ secrets.GA_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
